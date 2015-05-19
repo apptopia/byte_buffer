@@ -125,12 +125,19 @@ rb_byte_buffer_append(VALUE self, VALUE str)
     size_t   len;
     buffer_t *b;
 
-
-    Check_Type(str, T_STRING);
-    c_str = RSTRING_PTR(str);
-    len   = RSTRING_LEN(str);
-
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+
+    if (CLASS_OF(str) == rb_cString) {
+        c_str = RSTRING_PTR(str);
+        len   = RSTRING_LEN(str);
+    } else if (CLASS_OF(str) == CLASS_OF(self)) {
+        buffer_t *other_b;
+        TypedData_Get_Struct(str, buffer_t, &buffer_data_type, other_b);
+        c_str = READ_PTR(other_b);
+        len   = READ_SIZE(other_b);
+    } else
+        rb_raise(rb_eTypeError, "wrong argument type %s (expected String or %s)", rb_obj_classname(str), rb_obj_classname(self));
+
     ENSURE_WRITE_CAPACITY(b, len);
     memcpy(WRITE_PTR(b), c_str, len);
     b->write_pos += len;
