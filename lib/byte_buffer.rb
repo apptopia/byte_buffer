@@ -1,5 +1,4 @@
-require "byte_buffer/version"
-
 module ByteBuffer
-  # Your code goes here...
+  require_relative 'byte_buffer/version'
+  require_relative 'byte_buffer/buffer'
 end
