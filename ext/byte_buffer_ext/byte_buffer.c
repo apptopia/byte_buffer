@@ -270,7 +270,7 @@ grow_buffer(buffer_t* buffer_ptr, size_t len)
     size_t new_size = buffer_ptr->write_pos - buffer_ptr->read_pos + len;
 
     if (new_size <= buffer_ptr->size) {
-        memcpy(buffer_ptr->b_ptr, READ_PTR(buffer_ptr), READ_SIZE(buffer_ptr));
+        memmove(buffer_ptr->b_ptr, READ_PTR(buffer_ptr), READ_SIZE(buffer_ptr));
         buffer_ptr->write_pos -= buffer_ptr->read_pos;
         buffer_ptr->read_pos = 0;
     } else {
