@@ -12,6 +12,7 @@
 
 static VALUE rb_byte_buffer_allocate(VALUE klass);
 static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE rb_byte_buffer_length(VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_read_int(VALUE self);
@@ -63,6 +64,7 @@ Init_byte_buffer_ext()
 
     rb_define_alloc_func(rb_cBuffer, rb_byte_buffer_allocate);
     rb_define_method(rb_cBuffer, "initialize", rb_byte_buffer_initialize, -1);
+    rb_define_method(rb_cBuffer, "length", rb_byte_buffer_length, 0);
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
@@ -92,6 +94,16 @@ rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self)
         rb_byte_buffer_append(self, str);
 
     return self;
+}
+
+VALUE
+rb_byte_buffer_length(VALUE self)
+{
+    buffer_t *b;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+
+    return UINT2NUM(READ_SIZE(b));
 }
 
 VALUE

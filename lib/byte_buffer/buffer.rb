@@ -1,7 +1,6 @@
 module ByteBuffer
   class Buffer
-    def lol
-      "Foo"
-    end
+    alias_method :size, :length
+    alias_method :bytesize, :length
   end
 end
