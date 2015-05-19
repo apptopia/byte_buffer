@@ -21,6 +21,7 @@ static VALUE rb_byte_buffer_read_int(VALUE self);
 static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_index(int argc, VALUE *argv, VALUE self);
+static VALUE rb_byte_buffer_update(VALUE self, VALUE location, VALUE bytes);
 static VALUE rb_byte_buffer_to_str(VALUE self);
 static VALUE rb_byte_buffer_inspect(VALUE self);
 
@@ -78,6 +79,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
     rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
     rb_define_method(rb_cBuffer, "index", rb_byte_buffer_index, -1);
+    rb_define_method(rb_cBuffer, "update", rb_byte_buffer_update, 2);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
     rb_define_method(rb_cBuffer, "inspect", rb_byte_buffer_inspect, 0);
 }
@@ -260,6 +262,30 @@ rb_byte_buffer_index(int argc, VALUE *argv, VALUE self)
         else
             return Qnil;
     }
+}
+
+VALUE
+rb_byte_buffer_update(VALUE self, VALUE location, VALUE bytes)
+{
+    long offset;
+    long copy_bytes_len;
+    buffer_t *b;
+
+    Check_Type(location, T_FIXNUM);
+    Check_Type(bytes, T_STRING);
+    offset = NUM2LONG(location);
+    if (offset < 0) rb_raise(rb_eRangeError, "location can't be negative");
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    if (offset >= READ_SIZE(b))
+        return self;
+
+    copy_bytes_len = RSTRING_LEN(bytes);
+    if (offset + copy_bytes_len > READ_SIZE(b))
+        copy_bytes_len = READ_SIZE(b) - offset;
+    memcpy(READ_PTR(b) + offset, RSTRING_PTR(bytes), copy_bytes_len);
+
+    return self;
 }
 
 VALUE
