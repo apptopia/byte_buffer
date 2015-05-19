@@ -7,11 +7,14 @@ Gem::Specification.new do |spec|
   spec.version       = ByteBuffer::VERSION
   spec.authors       = ["Serge Balyuk"]
   spec.email         = ["sergeb@apptopia.com", "bgipsy@gmail.com"]
-
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.homepage      = "http:://github.com/apptopia/byte_buffer"
   spec.license       = "MIT"
+
+  spec.summary       = %q{
+    Fast native implementation of byte buffer intended to be used as part
+    of frame based protocol PDU handling code. Can serve as drop in replacement for Ione::ByteBuffer
+    and used in DataStax Cassandra Ruby driver.
+  }
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
   # delete this section to allow pushing this gem to any host.
@@ -25,9 +28,11 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  spec.extensions    = ["ext/byte_buffer_ext/extconf.rb"]
 
-  spec.add_development_dependency "bundler",      "~> 1.9"
-  spec.add_development_dependency "rake",         "~> 10.0"
-  spec.add_development_dependency "pry",          "~> 0.10.1"
-  spec.add_development_dependency "rspec",        "~> 3.2.0"
+  spec.add_development_dependency "bundler",            "~> 1.9"
+  spec.add_development_dependency "rake",               "~> 10.0"
+  spec.add_development_dependency "pry",                "~> 0.10.1"
+  spec.add_development_dependency "rspec",              "~> 3.2.0"
+  spec.add_development_dependency "rake-compiler",      "~> 0.9.5"
 end
