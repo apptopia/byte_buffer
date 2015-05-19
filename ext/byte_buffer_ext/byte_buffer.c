@@ -19,6 +19,7 @@ static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_int(VALUE self);
 static VALUE rb_byte_buffer_read_short(VALUE self);
+static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_to_str(VALUE self);
 static VALUE rb_byte_buffer_inspect(VALUE self);
 
@@ -74,6 +75,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
     rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
+    rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
     rb_define_method(rb_cBuffer, "inspect", rb_byte_buffer_inspect, 0);
 }
@@ -207,6 +209,26 @@ rb_byte_buffer_read_short(VALUE self)
     b->read_pos += 2;
 
     return UINT2NUM(i16);
+}
+
+VALUE
+rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self)
+{
+    VALUE f_signed;
+    buffer_t *b;
+    uint8_t i8;
+
+    rb_scan_args(argc, argv, "01", &f_signed);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_READ_CAPACITY(b, 1);
+    i8 = *((uint8_t*)READ_PTR(b));
+    b->read_pos += 1;
+
+    if (RTEST(f_signed))
+        return INT2NUM((int8_t)i8);
+    else
+        return UINT2NUM(i8);
 }
 
 VALUE
