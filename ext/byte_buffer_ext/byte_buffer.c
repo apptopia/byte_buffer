@@ -6,13 +6,15 @@
 
 #include "ruby.h"
 #include <string.h>
+#include "portable_endian.h"
 
 #define BYTE_BUFFER_EMBEDDED_SIZE 1024
 
 static VALUE rb_byte_buffer_allocate(VALUE klass);
 static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
-static VALUE rb_byte_buffer_lol_int(VALUE self);
+static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
+static VALUE rb_byte_buffer_read_int(VALUE self);
 static VALUE rb_byte_buffer_to_str(VALUE self);
 static VALUE rb_byte_buffer_inspect(VALUE self);
 
@@ -44,6 +46,11 @@ typedef struct {
 #define ENSURE_WRITE_CAPACITY(buffer_ptr,len) \
     { if (buffer_ptr->write_pos + len > buffer_ptr->size) grow_buffer(buffer_ptr, len); }
 
+#define ENSURE_READ_CAPACITY(buffer_ptr,len) \
+    { if (buffer_ptr->read_pos + len > buffer_ptr->write_pos) \
+        rb_raise(rb_eRangeError, "%zu bytes requred, but only %zu available", (size_t)len, READ_SIZE(buffer_ptr)); }
+
+static uint32_t value_to_uint32(VALUE x);
 static void grow_buffer(buffer_t* buffer_ptr, size_t len);
 
 void
@@ -57,7 +64,8 @@ Init_byte_buffer_ext()
     rb_define_alloc_func(rb_cBuffer, rb_byte_buffer_allocate);
     rb_define_method(rb_cBuffer, "initialize", rb_byte_buffer_initialize, -1);
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
-    rb_define_method(rb_cBuffer, "lol_int", rb_byte_buffer_lol_int, 0);
+    rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
+    rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
     rb_define_method(rb_cBuffer, "inspect", rb_byte_buffer_inspect, 0);
 }
@@ -107,9 +115,32 @@ rb_byte_buffer_append(VALUE self, VALUE str)
 }
 
 VALUE
-rb_byte_buffer_lol_int(VALUE self)
+rb_byte_buffer_append_int(VALUE self, VALUE i)
 {
-    return INT2NUM(42);
+    buffer_t *b;
+    uint32_t i32 = value_to_uint32(i);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_WRITE_CAPACITY(b, 4);
+    i32 = htobe32(i32);
+    memcpy(WRITE_PTR(b), &i32, 4);
+    b->write_pos += 4;
+
+    return self;
+}
+
+VALUE
+rb_byte_buffer_read_int(VALUE self)
+{
+    buffer_t *b;
+    uint32_t i32;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_READ_CAPACITY(b, 4);
+    i32 = be32toh(*((uint32_t*)READ_PTR(b)));
+    b->read_pos += 4;
+
+    return UINT2NUM(i32);
 }
 
 VALUE
@@ -132,6 +163,17 @@ rb_byte_buffer_inspect(VALUE self)
         rb_obj_classname(self), (void*)self, b->read_pos, b->write_pos, READ_SIZE(b), b->size);
 
     return str;
+}
+
+static uint32_t
+value_to_uint32(VALUE x)
+{
+    if (FIXNUM_P(x))
+        return FIX2ULONG(x);
+    else
+        rb_raise(rb_eTypeError, "expected `interger', got %s ", rb_obj_classname(x));
+
+    return 0;
 }
 
 void
