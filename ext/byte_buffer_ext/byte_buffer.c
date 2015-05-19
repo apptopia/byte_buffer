@@ -18,6 +18,7 @@ static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_int(VALUE self);
+static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_to_str(VALUE self);
 static VALUE rb_byte_buffer_inspect(VALUE self);
 
@@ -72,6 +73,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
+    rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
     rb_define_method(rb_cBuffer, "inspect", rb_byte_buffer_inspect, 0);
 }
@@ -191,6 +193,20 @@ rb_byte_buffer_read_int(VALUE self)
     b->read_pos += 4;
 
     return UINT2NUM(i32);
+}
+
+VALUE
+rb_byte_buffer_read_short(VALUE self)
+{
+    buffer_t *b;
+    uint16_t i16;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_READ_CAPACITY(b, 2);
+    i16 = be16toh(*((uint16_t*)READ_PTR(b)));
+    b->read_pos += 2;
+
+    return UINT2NUM(i16);
 }
 
 VALUE
