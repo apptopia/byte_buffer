@@ -15,6 +15,7 @@ static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_length(VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
+static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_int(VALUE self);
 static VALUE rb_byte_buffer_to_str(VALUE self);
 static VALUE rb_byte_buffer_inspect(VALUE self);
@@ -67,6 +68,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "length", rb_byte_buffer_length, 0);
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
+    rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
     rb_define_method(rb_cBuffer, "inspect", rb_byte_buffer_inspect, 0);
@@ -137,6 +139,22 @@ rb_byte_buffer_append_int(VALUE self, VALUE i)
     i32 = htobe32(i32);
     memcpy(WRITE_PTR(b), &i32, 4);
     b->write_pos += 4;
+
+    return self;
+}
+
+VALUE
+rb_byte_buffer_discard(VALUE self, VALUE n)
+{
+    buffer_t *b;
+    long len;
+
+    Check_Type(n, T_FIXNUM);
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    len = FIX2LONG(n);
+    if (len < 0) rb_raise(rb_eRangeError, "Cannot discard a negative number of bytes");
+    ENSURE_READ_CAPACITY(b, len);
+    b->read_pos += len;
 
     return self;
 }
