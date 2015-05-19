@@ -20,6 +20,7 @@ static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_int(VALUE self);
 static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
+static VALUE rb_byte_buffer_index(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_to_str(VALUE self);
 static VALUE rb_byte_buffer_inspect(VALUE self);
 
@@ -76,6 +77,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
     rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
     rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
+    rb_define_method(rb_cBuffer, "index", rb_byte_buffer_index, -1);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
     rb_define_method(rb_cBuffer, "inspect", rb_byte_buffer_inspect, 0);
 }
@@ -229,6 +231,35 @@ rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self)
         return INT2NUM((int8_t)i8);
     else
         return UINT2NUM(i8);
+}
+
+VALUE
+rb_byte_buffer_index(int argc, VALUE *argv, VALUE self)
+{
+    VALUE substr;
+    VALUE voffset;
+    size_t offset;
+    buffer_t *b;
+
+    rb_scan_args(argc, argv, "11", &substr, &voffset);
+    Check_Type(substr, T_STRING);
+    if (!NIL_P(voffset)) {
+        long l = NUM2LONG(voffset);
+        if (l < 0) rb_raise(rb_eRangeError, "offset can't be negative");
+        offset = l;
+    } else
+        offset = 0;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    if (offset >= READ_SIZE(b) || offset + RSTRING_LEN(substr) > READ_SIZE(b))
+        return Qnil;
+    else {
+        char* pos = memmem(READ_PTR(b) + offset, READ_SIZE(b), RSTRING_PTR(substr), RSTRING_LEN(substr));
+        if (pos)
+            return UINT2NUM(pos - READ_PTR(b));
+        else
+            return Qnil;
+    }
 }
 
 VALUE
