@@ -1,2 +1,1 @@
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'byte_buffer'
+require File.expand_path('../../lib/byte_buffer', __FILE__)

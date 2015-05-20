@@ -4,6 +4,7 @@ module ByteBuffer
     alias_method :bytesize, :length
     alias_method :<<, :append
     alias_method :cheap_peek, :to_str
+    alias_method :to_s, :to_str
 
     def empty?
       self.length == 0
