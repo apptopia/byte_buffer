@@ -39,6 +39,24 @@ describe ByteBuffer::Buffer, "extended interface" do
     end
   end
 
+  describe '#read_double' do
+    it 'decodes a double' do
+      buffer = described_class.new("@\xC3\x88\x0F\xC2\x7F\x9DU")
+      buffer.read_double.should == 10000.123123123
+    end
+
+    it 'consumes the bytes' do
+      buffer = described_class.new("@\xC3\x88\x0F\xC2\x7F\x9DUxyz")
+      buffer.read_double
+      buffer.should eql_bytes('xyz')
+    end
+
+    it 'raises an error when there is not enough bytes available' do
+      buffer = described_class.new("@\xC3\x88\x0F")
+      expect { buffer.read_double }.to raise_error(RangeError)
+    end
+  end
+
   describe '#append_int' do
     it 'encodes an int' do
       buffer.append_int(2323234234)
