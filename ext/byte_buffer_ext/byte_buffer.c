@@ -15,6 +15,7 @@ static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_length(VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
+static VALUE rb_byte_buffer_append_short(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_int(int argc, VALUE *argv, VALUE self);
@@ -73,6 +74,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "length", rb_byte_buffer_length, 0);
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
+    rb_define_method(rb_cBuffer, "append_short", rb_byte_buffer_append_short, 1);
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, -1);
@@ -156,6 +158,21 @@ rb_byte_buffer_append_int(VALUE self, VALUE i)
     i32 = htobe32(i32);
     memcpy(WRITE_PTR(b), &i32, 4);
     b->write_pos += 4;
+
+    return self;
+}
+
+VALUE
+rb_byte_buffer_append_short(VALUE self, VALUE i)
+{
+    buffer_t *b;
+    uint16_t i16 = value_to_uint32(i);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_WRITE_CAPACITY(b, 2);
+    i16 = htobe16(i16);
+    memcpy(WRITE_PTR(b), &i16, 2);
+    b->write_pos += 2;
 
     return self;
 }
