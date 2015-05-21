@@ -57,6 +57,24 @@ describe ByteBuffer::Buffer, "extended interface" do
     end
   end
 
+  describe '#read_float' do
+    it 'decodes a float' do
+      buffer = described_class.new("AB\x14{")
+      buffer.read_float.should be_within(0.00001).of(12.13)
+    end
+
+    it 'consumes the bytes' do
+      buffer = described_class.new("AB\x14{xyz")
+      buffer.read_float
+      buffer.should eql_bytes('xyz')
+    end
+
+    it 'raises an error when there is not enough bytes available' do
+      buffer = described_class.new("\x0F")
+      expect { buffer.read_float }.to raise_error(RangeError)
+    end
+  end
+
   describe '#append_int' do
     it 'encodes an int' do
       buffer.append_int(2323234234)

@@ -23,6 +23,7 @@ static VALUE rb_byte_buffer_read_int(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_read_double(VALUE self);
+static VALUE rb_byte_buffer_read_float(VALUE self);
 static VALUE rb_byte_buffer_index(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_update(VALUE self, VALUE location, VALUE bytes);
 static VALUE rb_byte_buffer_to_str(VALUE self);
@@ -84,6 +85,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
     rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
     rb_define_method(rb_cBuffer, "read_double", rb_byte_buffer_read_double, 0);
+    rb_define_method(rb_cBuffer, "read_float", rb_byte_buffer_read_float, 0);
     rb_define_method(rb_cBuffer, "index", rb_byte_buffer_index, -1);
     rb_define_method(rb_cBuffer, "update", rb_byte_buffer_update, 2);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
@@ -301,6 +303,20 @@ rb_byte_buffer_read_double(VALUE self)
     b->read_pos += 8;
 
     return DBL2NUM(*((double*)&i64));
+}
+
+VALUE
+rb_byte_buffer_read_float(VALUE self)
+{
+    buffer_t *b;
+    uint32_t i32;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_READ_CAPACITY(b, 4);
+    i32 = be32toh(*((uint32_t*)READ_PTR(b)));
+    b->read_pos += 4;
+
+    return DBL2NUM(((double)*((float*)&i32)));
 }
 
 VALUE
