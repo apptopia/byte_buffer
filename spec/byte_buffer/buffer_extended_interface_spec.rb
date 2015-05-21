@@ -11,6 +11,32 @@ describe ByteBuffer::Buffer, "extended interface" do
     end
   end
 
+  describe '#read_signed_int [#read_int(true)]' do
+    let :buffer do
+      described_class.new("\x00\xff\x00\xff")
+    end
+
+    it 'decodes a positive int' do
+      buffer.read_int(true).should == 0x00ff00ff
+    end
+
+    it 'decodes a negative int' do
+      buffer = described_class.new("\xff\xee\xdd\xcc")
+      buffer.read_int(true).should == 0xffeeddcc - 0x100000000
+    end
+
+    it 'consumes the bytes' do
+      buffer << "\xab\xcd"
+      buffer.read_int(true)
+      buffer.should eql_bytes("\xab\xcd")
+    end
+
+    it 'raises an error when there are not enough bytes in the buffer' do
+      buffer = described_class.new("\x01\xab")
+      expect { buffer.read_int(true) }.to raise_error(RangeError)
+    end
+  end
+
   describe '#read_long' do
     it 'decodes a positive long' do
       buffer = described_class.new("\x00\x00\xca\xfe\xba\xbe\x00\x00")
