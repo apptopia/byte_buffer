@@ -1,7 +1,7 @@
 # encoding: utf-8
 require 'spec_helper'
 
-describe ByteBuffer::Buffer do
+describe ByteBuffer::Buffer, 'Ione::ByteBuffer interface' do
   let :buffer do
     described_class.new
   end
@@ -217,11 +217,6 @@ describe ByteBuffer::Buffer do
     it 'returns the first four bytes interpreted as an int' do
       buffer.append("\xca\xfe\xba\xbe\x01")
       buffer.read_int.should == 0xcafebabe
-    end
-
-    it 'returns the first four bytes interpreted as signed int' do
-      buffer.append("\xff\xee\xdd\xcc")
-      buffer.read_int(true).should == -1122868
     end
 
     it 'removes the bytes from the buffer' do
