@@ -17,7 +17,7 @@ static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
-static VALUE rb_byte_buffer_read_int(VALUE self);
+static VALUE rb_byte_buffer_read_int(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_index(int argc, VALUE *argv, VALUE self);
@@ -75,7 +75,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
-    rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, 0);
+    rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, -1);
     rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
     rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
     rb_define_method(rb_cBuffer, "index", rb_byte_buffer_index, -1);
@@ -195,17 +195,23 @@ rb_byte_buffer_read(VALUE self, VALUE n)
 }
 
 VALUE
-rb_byte_buffer_read_int(VALUE self)
+rb_byte_buffer_read_int(int argc, VALUE *argv, VALUE self)
 {
+    VALUE f_signed;
     buffer_t *b;
     uint32_t i32;
+
+    rb_scan_args(argc, argv, "01", &f_signed);
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_READ_CAPACITY(b, 4);
     i32 = be32toh(*((uint32_t*)READ_PTR(b)));
     b->read_pos += 4;
 
-    return UINT2NUM(i32);
+    if (RTEST(f_signed))
+        return INT2NUM((int32_t)i32);
+    else
+        return UINT2NUM(i32);
 }
 
 VALUE

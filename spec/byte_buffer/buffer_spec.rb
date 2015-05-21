@@ -219,6 +219,11 @@ describe ByteBuffer::Buffer do
       buffer.read_int.should == 0xcafebabe
     end
 
+    it 'returns the first four bytes interpreted as signed int' do
+      buffer.append("\xff\xee\xdd\xcc")
+      buffer.read_int(true).should == -1122868
+    end
+
     it 'removes the bytes from the buffer' do
       buffer.append("\xca\xfe\xba\xbe\x01")
       buffer.read_int
