@@ -11,6 +11,34 @@ describe ByteBuffer::Buffer, "extended interface" do
     end
   end
 
+  describe '#read_long' do
+    it 'decodes a positive long' do
+      buffer = described_class.new("\x00\x00\xca\xfe\xba\xbe\x00\x00")
+      buffer.read_long(true).should == 0x0000cafebabe0000
+    end
+
+    it 'decodes an unsigned long' do
+      buffer = described_class.new("\xff\xee\xdd\xcc\xbb\xaa\x99\x88")
+      buffer.read_long(false).should == 0xffeeddccbbaa9988
+    end
+
+    it 'decodes a negative long' do
+      buffer = described_class.new("\xff\xee\xdd\xcc\xbb\xaa\x99\x88")
+      buffer.read_long(true).should == 0xffeeddccbbaa9988 - 0x10000000000000000
+    end
+
+    it 'consumes the bytes' do
+      buffer = described_class.new("\xca\xfe\xba\xbe\xca\xfe\xba\xbe\xca\xfe\xba\xbe")
+      buffer.read_long
+      buffer.should eql_bytes("\xca\xfe\xba\xbe")
+    end
+
+    it 'raises an error when there is not enough bytes available' do
+      b = described_class.new("\xca\xfe\xba\xbe\x00")
+      expect { b.read_long }.to raise_error(RangeError)
+    end
+  end
+
   describe '#append_int' do
     it 'encodes an int' do
       buffer.append_int(2323234234)

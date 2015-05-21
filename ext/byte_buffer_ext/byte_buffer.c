@@ -18,6 +18,7 @@ static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_short(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
+static VALUE rb_byte_buffer_read_long(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_read_int(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
@@ -77,6 +78,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "append_short", rb_byte_buffer_append_short, 1);
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
+    rb_define_method(rb_cBuffer, "read_long", rb_byte_buffer_read_long, -1);
     rb_define_method(rb_cBuffer, "read_int", rb_byte_buffer_read_int, -1);
     rb_define_method(rb_cBuffer, "read_short", rb_byte_buffer_read_short, 0);
     rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
@@ -209,6 +211,26 @@ rb_byte_buffer_read(VALUE self, VALUE n)
     b->read_pos += len;
 
     return str;
+}
+
+VALUE
+rb_byte_buffer_read_long(int argc, VALUE *argv, VALUE self)
+{
+    VALUE f_signed;
+    buffer_t *b;
+    uint64_t i64;
+
+    rb_scan_args(argc, argv, "01", &f_signed);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_READ_CAPACITY(b, 8);
+    i64 = be64toh(*((uint64_t*)READ_PTR(b)));
+    b->read_pos += 8;
+
+    if (RTEST(f_signed))
+        return LONG2NUM((int64_t)i64);
+    else
+        return ULONG2NUM(i64);
 }
 
 VALUE
