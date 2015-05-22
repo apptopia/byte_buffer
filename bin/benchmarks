@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "byte_buffer"
+require "benchmark/ips"
+require "ione"
+require "cassandra"
+
+def bm_append(buffer_class)
+  buffer = buffer_class.new
+  100.times {
+    buffer.append("HELLO" * 100)
+  }
+  buffer.to_str
+end
+
+def bm_append_int(buffer_class)
+  buffer = buffer_class.new
+  100.times {
+    buffer.append_int(101)
+  }
+  buffer.to_str
+end
+
+def bm_append_long(buffer_class)
+  buffer = buffer_class.new
+  100.times {
+    buffer.append_long(101)
+  }
+  buffer.to_str
+end
+
+def bm_read_int(buffer_class)
+  buffer = buffer_class.new("ABCD" * 100)
+  100.times {buffer.read_int}
+end
+
+def bm_read_long(buffer_class)
+  buffer = buffer_class.new("ABCDEFGH" * 100)
+  100.times {buffer.read_long}
+end
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#append") {bm_append(ByteBuffer::Buffer)}
+  x.report("Ione::ByteBuffer#append") {bm_append(Ione::ByteBuffer)}
+  x.compare!
+end
+
+puts "\n\n"
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#append_int") {bm_append_int(ByteBuffer::Buffer)}
+  x.report("Cassandra::Protocol::CqlByteBuffer#append_int") {bm_append_int(Cassandra::Protocol::CqlByteBuffer)}
+  x.compare!
+end
+
+puts "\n\n"
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#append_long") {bm_append_long(ByteBuffer::Buffer)}
+  x.report("Cassandra::Protocol::CqlByteBuffer#append_long") {bm_append_long(Cassandra::Protocol::CqlByteBuffer)}
+  x.compare!
+end
+
+puts "\n\n"
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#read_int") {bm_read_int(ByteBuffer::Buffer)}
+  x.report("Cassandra::Protocol::CqlByteBuffer#read_int") {bm_read_int(Cassandra::Protocol::CqlByteBuffer)}
+  x.compare!
+end
+
+puts "\n\n"
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#read_long") {bm_read_long(ByteBuffer::Buffer)}
+  x.report("Cassandra::Protocol::CqlByteBuffer#read_long") {bm_read_long(Cassandra::Protocol::CqlByteBuffer)}
+  x.compare!
+end

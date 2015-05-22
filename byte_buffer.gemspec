@@ -35,4 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry",                "~> 0.10.1"
   spec.add_development_dependency "rspec",              "~> 3.2.0"
   spec.add_development_dependency "rake-compiler",      "~> 0.9.5"
+  spec.add_development_dependency "benchmark-ips",      "~> 2.2.0"
+  spec.add_development_dependency "ione",               "~> 1.2.0"
+  spec.add_development_dependency "cassandra-driver",   "~> 2.1.3"
 end
