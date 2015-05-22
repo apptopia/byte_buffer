@@ -12,6 +12,7 @@
 
 static VALUE rb_byte_buffer_allocate(VALUE klass);
 static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE rb_byte_buffer_capacity(VALUE self);
 static VALUE rb_byte_buffer_length(VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_long(VALUE self, VALUE i);
@@ -79,7 +80,9 @@ Init_byte_buffer_ext()
     rb_cBuffer      = rb_define_class_under(rb_mByteBuffer, "Buffer", rb_cObject);
 
     rb_define_alloc_func(rb_cBuffer, rb_byte_buffer_allocate);
+    rb_define_const(rb_cBuffer, "DEFAULT_PREALLOC_SIZE", INT2FIX(BYTE_BUFFER_EMBEDDED_SIZE));
     rb_define_method(rb_cBuffer, "initialize", rb_byte_buffer_initialize, -1);
+    rb_define_method(rb_cBuffer, "capacity", rb_byte_buffer_capacity, 0);
     rb_define_method(rb_cBuffer, "length", rb_byte_buffer_length, 0);
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
     rb_define_method(rb_cBuffer, "append_long", rb_byte_buffer_append_long, 1);
@@ -120,10 +123,37 @@ rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "02", &str, &prealloc_size);
 
+    if (!NIL_P(prealloc_size)) {
+        buffer_t *b;
+        long len;
+
+        Check_Type(prealloc_size, T_FIXNUM);
+        len = FIX2LONG(prealloc_size);
+        if (len < 0) rb_raise(rb_eRangeError, "prealloc size can't be negative");
+        TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+
+        if (len > b->size) {
+            if (b->b_ptr != b->embedded_buffer) xfree(b->b_ptr);
+            b->b_ptr = ALLOC_N(char, len);
+            b->size = len;
+            b->read_pos = b->write_pos = 0;
+        }
+    }
+
     if (!NIL_P(str))
         rb_byte_buffer_append(self, str);
 
     return self;
+}
+
+VALUE
+rb_byte_buffer_capacity(VALUE self)
+{
+    buffer_t *b;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+
+    return UINT2NUM(b->size);
 }
 
 VALUE
