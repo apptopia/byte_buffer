@@ -101,6 +101,35 @@ describe ByteBuffer::Buffer, "extended interface" do
     end
   end
 
+  describe '#read_byte_array' do
+    it 'decodes unsigned int array' do
+      buffer = described_class.new("\x81\x02\x03")
+      buffer.read_byte_array(3).should == [129, 2, 3]
+    end
+
+    it 'decodes signed int array' do
+      buffer = described_class.new("\x81\x02\x03")
+      buffer.read_byte_array(3, true).should == [-127, 2, 3]
+    end
+
+    it 'consumes bytes' do
+      buffer = described_class.new("\x81\x02\x03")
+      buffer.read_byte_array(1).should == [129]
+      buffer.read_byte_array(2).should == [2, 3]
+    end
+
+    it 'raises error when there is not enough bytes available' do
+      buffer = described_class.new("\x81\x02\x03")
+      buffer.read_byte_array(1)
+      expect { buffer.read_byte_array(3) }.to raise_error(RangeError)
+    end
+
+    it 'raises error when given negative length' do
+      buffer = described_class.new("\x81\x02\x03")
+      expect { buffer.read_byte_array(-1) }.to raise_error(RangeError)
+    end
+  end
+
   describe '#append_int' do
     it 'encodes an int' do
       buffer.append_int(2323234234)

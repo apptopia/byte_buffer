@@ -24,6 +24,7 @@ static VALUE rb_byte_buffer_read_short(VALUE self);
 static VALUE rb_byte_buffer_read_byte(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_read_double(VALUE self);
 static VALUE rb_byte_buffer_read_float(VALUE self);
+static VALUE rb_byte_buffer_read_byte_array(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_index(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_update(VALUE self, VALUE location, VALUE bytes);
 static VALUE rb_byte_buffer_to_str(VALUE self);
@@ -86,6 +87,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "read_byte", rb_byte_buffer_read_byte, -1);
     rb_define_method(rb_cBuffer, "read_double", rb_byte_buffer_read_double, 0);
     rb_define_method(rb_cBuffer, "read_float", rb_byte_buffer_read_float, 0);
+    rb_define_method(rb_cBuffer, "read_byte_array", rb_byte_buffer_read_byte_array, -1);
     rb_define_method(rb_cBuffer, "index", rb_byte_buffer_index, -1);
     rb_define_method(rb_cBuffer, "update", rb_byte_buffer_update, 2);
     rb_define_method(rb_cBuffer, "to_str", rb_byte_buffer_to_str, 0);
@@ -317,6 +319,40 @@ rb_byte_buffer_read_float(VALUE self)
     b->read_pos += 4;
 
     return DBL2NUM(((double)*((float*)&i32)));
+}
+
+VALUE
+rb_byte_buffer_read_byte_array(int argc, VALUE *argv, VALUE self)
+{
+    buffer_t *b;
+    VALUE n;
+    VALUE f_signed;
+    VALUE ary;
+    long len;
+    int b_signed;
+
+    rb_scan_args(argc, argv, "11", &n, &f_signed);
+
+    Check_Type(n, T_FIXNUM);
+    len = FIX2LONG(n);
+    if (len < 0) rb_raise(rb_eRangeError, "Cannot read a negative number of bytes");
+    b_signed = RTEST(f_signed);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_READ_CAPACITY(b, len);
+
+    ary = rb_ary_new();
+    for (int i=0; i<len; ++i) {
+        uint8_t i8 = *((uint8_t*)READ_PTR(b));
+        b->read_pos += 1;
+
+        if (b_signed)
+            rb_ary_push(ary, INT2NUM((int8_t)i8));
+        else
+            rb_ary_push(ary, UINT2NUM(i8));
+    }
+
+    return ary;
 }
 
 VALUE
