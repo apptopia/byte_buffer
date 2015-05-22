@@ -14,6 +14,7 @@ static VALUE rb_byte_buffer_allocate(VALUE klass);
 static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE rb_byte_buffer_length(VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
+static VALUE rb_byte_buffer_append_long(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_short(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
@@ -63,6 +64,7 @@ typedef struct {
         rb_raise(rb_eRangeError, "%zu bytes requred, but only %zu available", (size_t)len, READ_SIZE(buffer_ptr)); }
 
 static uint32_t value_to_uint32(VALUE x);
+static uint64_t value_to_uint64(VALUE x);
 static void grow_buffer(buffer_t* buffer_ptr, size_t len);
 
 void
@@ -77,6 +79,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "initialize", rb_byte_buffer_initialize, -1);
     rb_define_method(rb_cBuffer, "length", rb_byte_buffer_length, 0);
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
+    rb_define_method(rb_cBuffer, "append_long", rb_byte_buffer_append_long, 1);
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
     rb_define_method(rb_cBuffer, "append_short", rb_byte_buffer_append_short, 1);
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
@@ -151,6 +154,21 @@ rb_byte_buffer_append(VALUE self, VALUE str)
     ENSURE_WRITE_CAPACITY(b, len);
     memcpy(WRITE_PTR(b), c_str, len);
     b->write_pos += len;
+
+    return self;
+}
+
+VALUE
+rb_byte_buffer_append_long(VALUE self, VALUE i)
+{
+    buffer_t *b;
+    uint64_t i64 = value_to_uint64(i);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_WRITE_CAPACITY(b, 8);
+    i64 = htobe64(i64);
+    memcpy(WRITE_PTR(b), &i64, 8);
+    b->write_pos += 8;
 
     return self;
 }
@@ -430,11 +448,24 @@ rb_byte_buffer_inspect(VALUE self)
     return str;
 }
 
-static uint32_t
+uint32_t
 value_to_uint32(VALUE x)
 {
     if (FIXNUM_P(x))
         return FIX2ULONG(x);
+    else
+        rb_raise(rb_eTypeError, "expected `interger', got %s ", rb_obj_classname(x));
+
+    return 0;
+}
+
+uint64_t
+value_to_uint64(VALUE x)
+{
+    if (FIXNUM_P(x))
+        return FIX2ULONG(x);
+    else if (TYPE(x) == T_BIGNUM)
+        return rb_big2ull(x);
     else
         rb_raise(rb_eTypeError, "expected `interger', got %s ", rb_obj_classname(x));
 

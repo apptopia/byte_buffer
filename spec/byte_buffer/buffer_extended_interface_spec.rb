@@ -130,6 +130,24 @@ describe ByteBuffer::Buffer, "extended interface" do
     end
   end
 
+  describe '#append_long' do
+    it 'encodes a long' do
+      buffer.append_long(0x0123456789)
+      buffer.should eql_bytes("\x00\x00\x00\x01\x23\x45\x67\x89")
+    end
+
+    it 'appends to the buffer' do
+      buffer << "\x99"
+      buffer.append_long(0x0123456789)
+      buffer.should eql_bytes("\x99\x00\x00\x00\x01\x23\x45\x67\x89")
+    end
+
+    it 'returns the buffer' do
+      result = buffer.append_long(1)
+      result.should equal(buffer)
+    end
+  end
+
   describe '#append_int' do
     it 'encodes an int' do
       buffer.append_int(2323234234)
