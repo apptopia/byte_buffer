@@ -201,4 +201,22 @@ describe ByteBuffer::Buffer, "extended interface" do
       result.should equal(buffer)
     end
   end
+
+  describe '#append_float' do
+    it 'encodes a float' do
+      buffer.append_float(12.13)
+      buffer.should eql_bytes("AB\x14{")
+    end
+
+    it 'appends to the buffer' do
+      buffer << 'BEFORE'
+      buffer.append_float(12.13)
+      buffer.read(6).should eql_bytes('BEFORE')
+    end
+
+    it 'returns the buffer' do
+      result = buffer.append_float(12.13)
+      result.should equal(buffer)
+    end
+  end
 end
