@@ -183,4 +183,22 @@ describe ByteBuffer::Buffer, "extended interface" do
       result.should equal(buffer)
     end
   end
+
+  describe '#append_double' do
+    it 'encodes a double' do
+      buffer.append_double(10000.123123123)
+      buffer.should eql_bytes("@\xC3\x88\x0F\xC2\x7F\x9DU")
+    end
+
+    it 'appends to the buffer' do
+      buffer << 'BEFORE'
+      buffer.append_double(10000.123123123)
+      buffer.read(6).should eql_bytes('BEFORE')
+    end
+
+    it 'returns the buffer' do
+      result = buffer.append_double(10000.123123123)
+      result.should equal(buffer)
+    end
+  end
 end

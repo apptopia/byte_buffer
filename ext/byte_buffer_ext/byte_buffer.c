@@ -17,6 +17,7 @@ static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_long(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_short(VALUE self, VALUE i);
+static VALUE rb_byte_buffer_append_double(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_long(int argc, VALUE *argv, VALUE self);
@@ -65,6 +66,7 @@ typedef struct {
 
 static uint32_t value_to_uint32(VALUE x);
 static uint64_t value_to_uint64(VALUE x);
+static double value_to_dbl(VALUE x);
 static void grow_buffer(buffer_t* buffer_ptr, size_t len);
 
 void
@@ -82,6 +84,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "append_long", rb_byte_buffer_append_long, 1);
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
     rb_define_method(rb_cBuffer, "append_short", rb_byte_buffer_append_short, 1);
+    rb_define_method(rb_cBuffer, "append_double", rb_byte_buffer_append_double, 1);
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
     rb_define_method(rb_cBuffer, "read_long", rb_byte_buffer_read_long, -1);
@@ -199,6 +202,22 @@ rb_byte_buffer_append_short(VALUE self, VALUE i)
     i16 = htobe16(i16);
     memcpy(WRITE_PTR(b), &i16, 2);
     b->write_pos += 2;
+
+    return self;
+}
+
+VALUE
+rb_byte_buffer_append_double(VALUE self, VALUE i)
+{
+    buffer_t *b;
+    double d = value_to_dbl(i);
+    uint64_t i64;
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_WRITE_CAPACITY(b, 8);
+    i64 = htobe64(*((uint64_t*)&d));
+    memcpy(WRITE_PTR(b), &i64, 8);
+    b->write_pos += 8;
 
     return self;
 }
@@ -467,9 +486,24 @@ value_to_uint64(VALUE x)
     else if (TYPE(x) == T_BIGNUM)
         return rb_big2ull(x);
     else
-        rb_raise(rb_eTypeError, "expected `interger', got %s ", rb_obj_classname(x));
+        rb_raise(rb_eTypeError, "expected `interger' or `bignum', got %s ", rb_obj_classname(x));
 
     return 0;
+}
+
+double
+value_to_dbl(VALUE x)
+{
+    if (FIXNUM_P(x))
+        return ((double)FIX2LONG(x));
+    else if (TYPE(x) == T_FLOAT)
+        return RFLOAT_VALUE(x);
+    else if (TYPE(x) == T_BIGNUM)
+        return rb_big2dbl(x);
+    else
+        rb_raise(rb_eTypeError, "expected a numeric type, got %s ", rb_obj_classname(x));
+
+    return 0.0;
 }
 
 void
