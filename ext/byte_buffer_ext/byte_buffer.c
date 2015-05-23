@@ -8,7 +8,7 @@
 #include <string.h>
 #include "portable_endian.h"
 
-#define BYTE_BUFFER_EMBEDDED_SIZE 1024
+#define BYTE_BUFFER_EMBEDDED_SIZE 512
 
 static VALUE rb_byte_buffer_allocate(VALUE klass);
 static VALUE rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self);

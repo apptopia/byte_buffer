@@ -6,6 +6,12 @@ require "benchmark/ips"
 require "ione"
 require "cassandra"
 
+def bm_allocation(buffer_class)
+  100.times {
+    buffer_class.new
+  }
+end
+
 def bm_append_big(buffer_class)
   buffer = buffer_class.new
   100.times {
@@ -67,8 +73,8 @@ def bm_read_double(buffer_class)
 end
 
 def run_benchmark(method, other_klass = Cassandra::Protocol::CqlByteBuffer, name_suffix = nil)
-  name_a = ["ByteBuffer::Buffer##{method}", name_suffix].compact.join(' ')
-  name_b = ["#{other_klass}##{method}", name_suffix].compact.join(' ')
+  name_a = ["#{method} - ByteBuffer::Buffer", name_suffix].compact.join(' ')
+  name_b = ["#{method} - #{other_klass}", name_suffix].compact.join(' ')
 
   Benchmark.ips do |x|
     x.report(name_a) {send(method, ByteBuffer::Buffer)}
@@ -79,6 +85,7 @@ def run_benchmark(method, other_klass = Cassandra::Protocol::CqlByteBuffer, name
   puts "\n\n"
 end
 
+run_benchmark(:bm_allocation, Ione::ByteBuffer)
 run_benchmark(:bm_append_big, Ione::ByteBuffer, 'big strings')
 run_benchmark(:bm_append_small, Ione::ByteBuffer, 'small strings')
 run_benchmark(:bm_append_int)
