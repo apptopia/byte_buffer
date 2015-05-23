@@ -6,10 +6,18 @@ require "benchmark/ips"
 require "ione"
 require "cassandra"
 
-def bm_append(buffer_class)
+def bm_append_big(buffer_class)
   buffer = buffer_class.new
   100.times {
     buffer.append("HELLO" * 100)
+  }
+  buffer.to_str
+end
+
+def bm_append_small(buffer_class)
+  buffer = buffer_class.new
+  100.times {
+    buffer.append("HELLO")
   }
   buffer.to_str
 end
@@ -30,6 +38,11 @@ def bm_append_long(buffer_class)
   buffer.to_str
 end
 
+def bm_read(buffer_class)
+  buffer = buffer_class.new("ABCD" * 100)
+  100.times {buffer.read(4)}
+end
+
 def bm_read_int(buffer_class)
   buffer = buffer_class.new("ABCD" * 100)
   100.times {buffer.read_int}
@@ -41,8 +54,16 @@ def bm_read_long(buffer_class)
 end
 
 Benchmark.ips do |x|
-  x.report("ByteBuffer::Buffer#append") {bm_append(ByteBuffer::Buffer)}
-  x.report("Ione::ByteBuffer#append") {bm_append(Ione::ByteBuffer)}
+  x.report("ByteBuffer::Buffer#append big strings") {bm_append_big(ByteBuffer::Buffer)}
+  x.report("Ione::ByteBuffer#append big strings") {bm_append_big(Ione::ByteBuffer)}
+  x.compare!
+end
+
+puts "\n\n"
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#append small strings") {bm_append_small(ByteBuffer::Buffer)}
+  x.report("Ione::ByteBuffer#append small strings") {bm_append_small(Ione::ByteBuffer)}
   x.compare!
 end
 
@@ -59,6 +80,14 @@ puts "\n\n"
 Benchmark.ips do |x|
   x.report("ByteBuffer::Buffer#append_long") {bm_append_long(ByteBuffer::Buffer)}
   x.report("Cassandra::Protocol::CqlByteBuffer#append_long") {bm_append_long(Cassandra::Protocol::CqlByteBuffer)}
+  x.compare!
+end
+
+puts "\n\n"
+
+Benchmark.ips do |x|
+  x.report("ByteBuffer::Buffer#read") {bm_read(ByteBuffer::Buffer)}
+  x.report("Cassandra::Protocol::CqlByteBuffer#read") {bm_read(Cassandra::Protocol::CqlByteBuffer)}
   x.compare!
 end
 
