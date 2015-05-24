@@ -51,4 +51,32 @@ describe ByteBuffer::Buffer do
       expect(buffer.capacity).to eq c0
     end
   end
+
+  describe "signs and ranges" do
+    it "fits unsigned int64" do
+      buffer = described_class.new
+      buffer.append_long(0xFFFFFFFFFFFFFFFF)
+      expect(buffer.read_long).to eq 0xFFFFFFFFFFFFFFFF
+    end
+
+    it "handles signed numbers consistently" do
+      buffer = described_class.new
+
+      buffer.append_int(-2)
+      expect(buffer.read_int(true)).to eq -2
+
+      buffer.append_long(-2)
+      expect(buffer.read_long(true)).to eq -2
+
+      buffer.append_double(-2.5)
+      expect(buffer.read_double).to eq -2.5
+
+      buffer.append_float(-2.5)
+      expect(buffer.read_float).to eq -2.5
+    end
+  end
+
+  describe "#append compatibility" do
+    it "accepts descendants of #{described_class}"
+  end
 end

@@ -219,4 +219,20 @@ describe ByteBuffer::Buffer, "extended interface" do
       result.should equal(buffer)
     end
   end
+
+  describe '#append_byte' do
+    it 'encodes byte' do
+      buffer.append_byte(0x20)
+      buffer.should eql_bytes("\x20")
+    end
+
+    it 'encodes negative byte' do
+      buffer.append_byte(-2)
+      buffer.should eql_bytes("\xFE")
+    end
+
+    it "raises error when number doesn't fit into byte" do
+      expect { buffer.append_byte(256) }.to raise_error(RangeError)
+    end
+  end
 end

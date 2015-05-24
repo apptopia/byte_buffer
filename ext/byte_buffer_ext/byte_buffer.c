@@ -17,6 +17,7 @@ static VALUE rb_byte_buffer_length(VALUE self);
 static VALUE rb_byte_buffer_append(VALUE self, VALUE str);
 static VALUE rb_byte_buffer_append_long(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_int(VALUE self, VALUE i);
+static VALUE rb_byte_buffer_append_byte(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_short(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_double(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_float(VALUE self, VALUE i);
@@ -66,7 +67,7 @@ typedef struct {
     { if (buffer_ptr->read_pos + len > buffer_ptr->write_pos) \
         rb_raise(rb_eRangeError, "%zu bytes requred, but only %zu available", (size_t)len, READ_SIZE(buffer_ptr)); }
 
-static uint32_t value_to_uint32(VALUE x);
+static int32_t value_to_int32(VALUE x);
 static uint64_t value_to_uint64(VALUE x);
 static double value_to_dbl(VALUE x);
 static void grow_buffer(buffer_t* buffer_ptr, size_t len);
@@ -87,6 +88,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "append", rb_byte_buffer_append, 1);
     rb_define_method(rb_cBuffer, "append_long", rb_byte_buffer_append_long, 1);
     rb_define_method(rb_cBuffer, "append_int", rb_byte_buffer_append_int, 1);
+    rb_define_method(rb_cBuffer, "append_byte", rb_byte_buffer_append_byte, 1);
     rb_define_method(rb_cBuffer, "append_short", rb_byte_buffer_append_short, 1);
     rb_define_method(rb_cBuffer, "append_double", rb_byte_buffer_append_double, 1);
     rb_define_method(rb_cBuffer, "append_float", rb_byte_buffer_append_float, 1);
@@ -212,7 +214,7 @@ VALUE
 rb_byte_buffer_append_int(VALUE self, VALUE i)
 {
     buffer_t *b;
-    uint32_t i32 = value_to_uint32(i);
+    int32_t i32 = value_to_int32(i);
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 4);
@@ -224,10 +226,29 @@ rb_byte_buffer_append_int(VALUE self, VALUE i)
 }
 
 VALUE
+rb_byte_buffer_append_byte(VALUE self, VALUE i)
+{
+    buffer_t *b;
+    int32_t i32 = value_to_int32(i);
+    int8_t i8;
+
+    i8 = (uint8_t)i32;
+    if (i8 != i32)
+        rb_raise(rb_eRangeError, "Number %d doesn't fit into byte", i32);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_WRITE_CAPACITY(b, 1);
+    memcpy(WRITE_PTR(b), &i8, 1);
+    b->write_pos += 1;
+
+    return self;
+}
+
+VALUE
 rb_byte_buffer_append_short(VALUE self, VALUE i)
 {
     buffer_t *b;
-    uint16_t i16 = value_to_uint32(i);
+    int16_t i16 = value_to_int32(i);
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 2);
@@ -515,11 +536,11 @@ rb_byte_buffer_inspect(VALUE self)
     return str;
 }
 
-uint32_t
-value_to_uint32(VALUE x)
+int32_t
+value_to_int32(VALUE x)
 {
     if (FIXNUM_P(x))
-        return FIX2ULONG(x);
+        return FIX2LONG(x);
     else
         rb_raise(rb_eTypeError, "expected `interger', got %s ", rb_obj_classname(x));
 
@@ -530,7 +551,7 @@ uint64_t
 value_to_uint64(VALUE x)
 {
     if (FIXNUM_P(x))
-        return FIX2ULONG(x);
+        return FIX2LONG(x);
     else if (TYPE(x) == T_BIGNUM)
         return rb_big2ull(x);
     else
