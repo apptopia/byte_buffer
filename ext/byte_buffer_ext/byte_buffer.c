@@ -208,7 +208,7 @@ rb_byte_buffer_append_long(VALUE self, VALUE i)
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 8);
     i64 = htobe64(i64);
-    memcpy(WRITE_PTR(b), &i64, 8);
+    *((int64_t*)WRITE_PTR(b)) = i64;
     b->write_pos += 8;
 
     return self;
@@ -223,7 +223,7 @@ rb_byte_buffer_append_int(VALUE self, VALUE i)
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 4);
     i32 = htobe32(i32);
-    memcpy(WRITE_PTR(b), &i32, 4);
+    *((int32_t*)WRITE_PTR(b)) = i32;
     b->write_pos += 4;
 
     return self;
@@ -241,7 +241,7 @@ rb_byte_buffer_append_byte(VALUE self, VALUE i)
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 1);
-    memcpy(WRITE_PTR(b), &i8, 1);
+    *((int8_t*)WRITE_PTR(b)) = i8;
     b->write_pos += 1;
 
     return self;
@@ -260,7 +260,7 @@ rb_byte_buffer_append_short(VALUE self, VALUE i)
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 2);
     i16 = htobe16(i16);
-    memcpy(WRITE_PTR(b), &i16, 2);
+    *((int16_t*)WRITE_PTR(b)) = i16;
     b->write_pos += 2;
 
     return self;
@@ -276,7 +276,7 @@ rb_byte_buffer_append_double(VALUE self, VALUE i)
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 8);
     i64 = htobe64(*((uint64_t*)&d));
-    memcpy(WRITE_PTR(b), &i64, 8);
+    *((int64_t*)WRITE_PTR(b)) = i64;
     b->write_pos += 8;
 
     return self;
@@ -292,7 +292,7 @@ rb_byte_buffer_append_float(VALUE self, VALUE i)
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 4);
     i32 = htobe32(*((uint32_t*)&f));
-    memcpy(WRITE_PTR(b), &i32, 4);
+    *((int32_t*)WRITE_PTR(b)) = i32;
     b->write_pos += 4;
 
     return self;
