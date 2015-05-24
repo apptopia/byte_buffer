@@ -59,8 +59,26 @@ describe ByteBuffer::Buffer do
       expect(buffer.read_long).to eq 0xFFFFFFFFFFFFFFFF
     end
 
+    it "fits unsigned int32" do
+      buffer = described_class.new
+      buffer.append_int(0xFFFFFFFF)
+      expect(buffer.read_int).to eq 0xFFFFFFFF
+    end
+
+    it "fits unsigned int16" do
+      buffer = described_class.new
+      buffer.append_short(0xFFFF)
+      expect(buffer.read_short).to eq 0xFFFF
+    end
+
     it "handles signed numbers consistently" do
       buffer = described_class.new
+
+      buffer.append_byte(-2)
+      expect(buffer.read_byte(true)).to eq -2
+
+      buffer.append_short(-2)
+      expect(buffer.read_short(true)).to eq -2
 
       buffer.append_int(-2)
       expect(buffer.read_int(true)).to eq -2
