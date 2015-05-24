@@ -153,6 +153,13 @@ describe ByteBuffer::Buffer do
   end
 
   describe "#append compatibility" do
-    it "accepts descendants of #{described_class}"
+    class TestBufferSubclass < ByteBuffer::Buffer
+    end
+
+    it "accepts descendants of #{described_class}" do
+      buffer = described_class.new('ABC')
+      buffer.append(TestBufferSubclass.new('DEF'))
+      expect(buffer.to_str).to eq 'ABCDEF'
+    end
   end
 end

@@ -72,10 +72,12 @@ static int64_t value_to_int64(VALUE x);
 static double value_to_dbl(VALUE x);
 static void grow_buffer(buffer_t* buffer_ptr, size_t len);
 
+static VALUE rb_cBuffer = 0;
+
 void
 Init_byte_buffer_ext()
 {
-    VALUE rb_mByteBuffer, rb_cBuffer;
+    VALUE rb_mByteBuffer;
 
     rb_mByteBuffer  = rb_define_module("ByteBuffer");
     rb_cBuffer      = rb_define_class_under(rb_mByteBuffer, "Buffer", rb_cObject);
@@ -180,7 +182,7 @@ rb_byte_buffer_append(VALUE self, VALUE str)
     if (CLASS_OF(str) == rb_cString) {
         c_str = RSTRING_PTR(str);
         len   = RSTRING_LEN(str);
-    } else if (CLASS_OF(str) == CLASS_OF(self)) {
+    } else if (rb_cBuffer && rb_obj_is_kind_of(str, rb_cBuffer)) {
         buffer_t *other_b;
         TypedData_Get_Struct(str, buffer_t, &buffer_data_type, other_b);
         c_str = READ_PTR(other_b);
