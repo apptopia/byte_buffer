@@ -7,8 +7,15 @@ require "ione"
 require "cassandra"
 
 def bm_allocation(buffer_class)
+  buffer_class.new
+end
+
+def bm_churn(buffer_class)
+  b = buffer_class.new
+  s = 'X' * 200
   100.times {
-    buffer_class.new
+    b.append(s)
+    b.read(s.size)
   }
 end
 
@@ -86,6 +93,7 @@ def run_benchmark(method, other_klass = Cassandra::Protocol::CqlByteBuffer, name
 end
 
 run_benchmark(:bm_allocation, Ione::ByteBuffer)
+run_benchmark(:bm_churn, Ione::ByteBuffer, 'space reuse, read/write interleaved')
 run_benchmark(:bm_append_big, Ione::ByteBuffer, 'big strings')
 run_benchmark(:bm_append_small, Ione::ByteBuffer, 'small strings')
 run_benchmark(:bm_append_int)

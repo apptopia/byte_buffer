@@ -37,5 +37,18 @@ describe ByteBuffer::Buffer do
 
       expect(c2 - c1).to be > (c1 - c0)
     end
+
+    it "doesn't grow buffer when writes and reads are balanced" do
+      buffer = described_class.new
+      c0 = buffer.capacity
+      s = 'X' * c0
+
+      buffer.append(s)
+      buffer.read(s.bytesize)
+      buffer.append(s)
+      buffer.read(s.bytesize)
+
+      expect(buffer.capacity).to eq c0
+    end
   end
 end
