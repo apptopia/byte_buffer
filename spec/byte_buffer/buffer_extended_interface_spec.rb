@@ -235,4 +235,20 @@ describe ByteBuffer::Buffer, "extended interface" do
       expect { buffer.append_byte(256) }.to raise_error(RangeError)
     end
   end
+
+  describe '#append_short' do
+    it 'encodes 2 bytes' do
+      buffer.append_short(0x20)
+      buffer.should eql_bytes("\x00\x20")
+    end
+
+    it 'encodes negative value into 2 bytes' do
+      buffer.append_short(-2)
+      buffer.should eql_bytes("\xFF\xFE")
+    end
+
+    it "raises error when number doesn't fit into 2 bytes" do
+      expect { buffer.append_short(0x10000) }.to raise_error(RangeError)
+    end
+  end
 end

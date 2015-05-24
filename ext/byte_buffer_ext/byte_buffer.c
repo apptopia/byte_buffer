@@ -68,7 +68,7 @@ typedef struct {
         rb_raise(rb_eRangeError, "%zu bytes requred, but only %zu available", (size_t)len, READ_SIZE(buffer_ptr)); }
 
 static int32_t value_to_int32(VALUE x);
-static uint64_t value_to_uint64(VALUE x);
+static int64_t value_to_int64(VALUE x);
 static double value_to_dbl(VALUE x);
 static void grow_buffer(buffer_t* buffer_ptr, size_t len);
 
@@ -199,7 +199,7 @@ VALUE
 rb_byte_buffer_append_long(VALUE self, VALUE i)
 {
     buffer_t *b;
-    uint64_t i64 = value_to_uint64(i);
+    int64_t i64 = value_to_int64(i);
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 8);
@@ -230,10 +230,9 @@ rb_byte_buffer_append_byte(VALUE self, VALUE i)
 {
     buffer_t *b;
     int32_t i32 = value_to_int32(i);
-    int8_t i8;
+    int8_t i8 = (int8_t)i32;
 
-    i8 = (uint8_t)i32;
-    if (i8 != i32)
+    if (i32 > 0xFF || -i32 > 0x80)
         rb_raise(rb_eRangeError, "Number %d doesn't fit into byte", i32);
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
@@ -248,7 +247,11 @@ VALUE
 rb_byte_buffer_append_short(VALUE self, VALUE i)
 {
     buffer_t *b;
-    int16_t i16 = value_to_int32(i);
+    int32_t i32 = value_to_int32(i);
+    int16_t i16 = (int16_t)i32;
+
+    if (i32 > 0xFFFF || -i32 > 0x8000)
+        rb_raise(rb_eRangeError, "Number %d doesn't fit into 2 bytes", i32);
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 2);
@@ -545,21 +548,30 @@ rb_byte_buffer_inspect(VALUE self)
 int32_t
 value_to_int32(VALUE x)
 {
-    if (FIXNUM_P(x))
-        return FIX2LONG(x);
+    if (FIXNUM_P(x)) {
+        int64_t i64 = FIX2LONG(x);
+
+        if (i64 > 0xFFFFFFFF || -i64 > 0x80000000)
+            rb_raise(rb_eRangeError, "Number %lld is too big", i64);
+
+        return (int32_t)i64;
+    } else if (TYPE(x) == T_BIGNUM)
+        rb_raise(rb_eRangeError, "expected `interger', got `bignum'");
     else
         rb_raise(rb_eTypeError, "expected `interger', got %s ", rb_obj_classname(x));
 
     return 0;
 }
 
-uint64_t
-value_to_uint64(VALUE x)
+int64_t
+value_to_int64(VALUE x)
 {
     if (FIXNUM_P(x))
         return FIX2LONG(x);
-    else if (TYPE(x) == T_BIGNUM)
-        return rb_big2ull(x);
+    else if (TYPE(x) == T_BIGNUM && RBIGNUM_SIGN(x))
+        return (int64_t)rb_big2ull(x);
+    else if (TYPE(x) == T_BIGNUM && !RBIGNUM_SIGN(x))
+        return rb_big2ll(x);
     else
         rb_raise(rb_eTypeError, "expected `interger' or `bignum', got %s ", rb_obj_classname(x));
 
