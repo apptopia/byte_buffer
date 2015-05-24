@@ -21,6 +21,7 @@ static VALUE rb_byte_buffer_append_byte(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_short(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_double(VALUE self, VALUE i);
 static VALUE rb_byte_buffer_append_float(VALUE self, VALUE i);
+static VALUE rb_byte_buffer_append_byte_array(VALUE self, VALUE ary);
 static VALUE rb_byte_buffer_discard(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read(VALUE self, VALUE n);
 static VALUE rb_byte_buffer_read_long(int argc, VALUE *argv, VALUE self);
@@ -94,6 +95,7 @@ Init_byte_buffer_ext()
     rb_define_method(rb_cBuffer, "append_short", rb_byte_buffer_append_short, 1);
     rb_define_method(rb_cBuffer, "append_double", rb_byte_buffer_append_double, 1);
     rb_define_method(rb_cBuffer, "append_float", rb_byte_buffer_append_float, 1);
+    rb_define_method(rb_cBuffer, "append_byte_array", rb_byte_buffer_append_byte_array, 1);
     rb_define_method(rb_cBuffer, "discard", rb_byte_buffer_discard, 1);
     rb_define_method(rb_cBuffer, "read", rb_byte_buffer_read, 1);
     rb_define_method(rb_cBuffer, "read_long", rb_byte_buffer_read_long, -1);
@@ -292,6 +294,38 @@ rb_byte_buffer_append_float(VALUE self, VALUE i)
     i32 = htobe32(*((uint32_t*)&f));
     memcpy(WRITE_PTR(b), &i32, 4);
     b->write_pos += 4;
+
+    return self;
+}
+
+VALUE
+rb_byte_buffer_append_byte_array(VALUE self, VALUE maybe_ary)
+{
+    VALUE ary = rb_check_array_type(maybe_ary);
+    VALUE *ary_ptr;
+    size_t len;
+    buffer_t *b;
+
+    if (NIL_P(ary))
+        rb_raise(rb_eTypeError, "expected Array, got %s", rb_obj_classname(maybe_ary));
+
+    len = RARRAY_LEN(ary);
+    ary_ptr = RARRAY_PTR(ary);
+
+    TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
+    ENSURE_WRITE_CAPACITY(b, len);
+    for (size_t i = 0; i < RARRAY_LEN(ary); ++i) {
+        VALUE n = ary_ptr[i];
+        int32_t i32 = value_to_int32(n);
+        int8_t i8 = (int8_t)i32;
+
+        if (i32 > 0xFF || -i32 > 0x80)
+            rb_raise(rb_eRangeError, "Number %d doesn't fit into byte", i32);
+
+        ((int8_t*)WRITE_PTR(b))[i] = i8;
+    }
+
+    b->write_pos += len;
 
     return self;
 }

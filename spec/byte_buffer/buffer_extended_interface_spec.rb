@@ -251,4 +251,26 @@ describe ByteBuffer::Buffer, "extended interface" do
       expect { buffer.append_short(0x10000) }.to raise_error(RangeError)
     end
   end
+
+  describe '#append_byte_array' do
+    it 'encodes byte array' do
+      buffer.append_byte_array([0xA, 0xB, 0xC, 0xD])
+      buffer.should eql_bytes("\xA\xB\xC\xD")
+    end
+
+    it 'raises type error' do
+      expect { buffer.append_byte_array('lol') }.to raise_error(TypeError)
+    end
+
+    it 'encodes byte array with negative values' do
+      buffer.append_byte_array([0xA, 0xB, -1, 0xD])
+      buffer.should eql_bytes("\xA\xB\xFF\xD")
+    end
+
+    it "doesn't change buffer in case of error" do
+      buffer.append("HELLO")
+      expect(lambda {buffer.append_byte_array([0xA, 0xB, 0xFF + 1, 0xD])}).to raise_error RangeError
+      buffer.should eql_bytes("HELLO")
+    end
+  end
 end
