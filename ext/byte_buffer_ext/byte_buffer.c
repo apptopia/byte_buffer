@@ -189,8 +189,11 @@ rb_byte_buffer_append(VALUE self, VALUE str)
         TypedData_Get_Struct(str, buffer_t, &buffer_data_type, other_b);
         c_str = READ_PTR(other_b);
         len   = READ_SIZE(other_b);
-    } else
-        rb_raise(rb_eTypeError, "wrong argument type %s (expected String or %s)", rb_obj_classname(str), rb_obj_classname(self));
+    } else {
+        VALUE s = rb_funcall(str, rb_intern("to_s"), 0, 0);
+        c_str = RSTRING_PTR(s);
+        len   = RSTRING_LEN(s);
+    }
 
     ENSURE_WRITE_CAPACITY(b, len);
     memcpy(WRITE_PTR(b), c_str, len);

@@ -156,10 +156,22 @@ describe ByteBuffer::Buffer do
     class TestBufferSubclass < ByteBuffer::Buffer
     end
 
+    class TestExternalBuffer
+      def to_s
+        "external buffer content"
+      end
+    end
+
     it "accepts descendants of #{described_class}" do
       buffer = described_class.new('ABC')
       buffer.append(TestBufferSubclass.new('DEF'))
       expect(buffer.to_str).to eq 'ABCDEF'
+    end
+
+    it "accepts instances of any class via #to_s" do
+      buffer = described_class.new('ABC:')
+      buffer.append(TestExternalBuffer.new)
+      expect(buffer.to_str).to eq 'ABC:external buffer content'
     end
   end
 end
