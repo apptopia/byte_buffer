@@ -6,6 +6,7 @@
 
 #include "ruby.h"
 #include <string.h>
+#include <inttypes.h>
 #include "portable_endian.h"
 
 #define BYTE_BUFFER_EMBEDDED_SIZE 512
@@ -138,7 +139,7 @@ rb_byte_buffer_initialize(int argc, VALUE *argv, VALUE self)
         if (len < 0) rb_raise(rb_eRangeError, "prealloc size can't be negative");
         TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
 
-        if (len > b->size) {
+        if ((size_t)len > b->size) {
             if (b->b_ptr != b->embedded_buffer) xfree(b->b_ptr);
             b->b_ptr = ALLOC_N(char, len);
             b->size = len;
@@ -273,13 +274,13 @@ VALUE
 rb_byte_buffer_append_double(VALUE self, VALUE i)
 {
     buffer_t *b;
-    double d = value_to_dbl(i);
-    uint64_t i64;
+    union {double d; uint64_t i64;} ucast;
 
+    ucast.d = value_to_dbl(i);
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 8);
-    i64 = htobe64(*((uint64_t*)&d));
-    *((int64_t*)WRITE_PTR(b)) = i64;
+    ucast.i64 = htobe64(ucast.i64);
+    *(int64_t*)WRITE_PTR(b) = ucast.i64;
     b->write_pos += 8;
 
     return self;
@@ -289,13 +290,13 @@ VALUE
 rb_byte_buffer_append_float(VALUE self, VALUE i)
 {
     buffer_t *b;
-    float f = ((float)value_to_dbl(i));
-    uint32_t i32;
+    union {float f; uint32_t i32;} ucast;
 
+    ucast.f = (float)value_to_dbl(i);
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, 4);
-    i32 = htobe32(*((uint32_t*)&f));
-    *((int32_t*)WRITE_PTR(b)) = i32;
+    ucast.i32 = htobe32(ucast.i32);
+    *(int32_t*)WRITE_PTR(b) = ucast.i32;
     b->write_pos += 4;
 
     return self;
@@ -306,7 +307,7 @@ rb_byte_buffer_append_byte_array(VALUE self, VALUE maybe_ary)
 {
     VALUE ary = rb_check_array_type(maybe_ary);
     VALUE *ary_ptr;
-    size_t len;
+    long len, i;
     buffer_t *b;
 
     if (NIL_P(ary))
@@ -317,7 +318,7 @@ rb_byte_buffer_append_byte_array(VALUE self, VALUE maybe_ary)
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_WRITE_CAPACITY(b, len);
-    for (size_t i = 0; i < RARRAY_LEN(ary); ++i) {
+    for (i = 0; i < RARRAY_LEN(ary); ++i) {
         VALUE n = ary_ptr[i];
         int32_t i32 = value_to_int32(n);
         int8_t i8 = (int8_t)i32;
@@ -451,28 +452,28 @@ VALUE
 rb_byte_buffer_read_double(VALUE self)
 {
     buffer_t *b;
-    uint64_t i64;
+    union {uint64_t i64; double d;} ucast;
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_READ_CAPACITY(b, 8);
-    i64 = be64toh(*((uint64_t*)READ_PTR(b)));
+    ucast.i64 = be64toh(*(uint64_t*)READ_PTR(b));
     b->read_pos += 8;
 
-    return DBL2NUM(*((double*)&i64));
+    return DBL2NUM(ucast.d);
 }
 
 VALUE
 rb_byte_buffer_read_float(VALUE self)
 {
     buffer_t *b;
-    uint32_t i32;
+    union {float d; uint32_t i32;} ucast;
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
     ENSURE_READ_CAPACITY(b, 4);
-    i32 = be32toh(*((uint32_t*)READ_PTR(b)));
+    ucast.i32 = be32toh(*(uint32_t*)READ_PTR(b));
     b->read_pos += 4;
 
-    return DBL2NUM(((double)*((float*)&i32)));
+    return DBL2NUM((double)ucast.d);
 }
 
 VALUE
@@ -482,7 +483,7 @@ rb_byte_buffer_read_byte_array(int argc, VALUE *argv, VALUE self)
     VALUE n;
     VALUE f_signed;
     VALUE ary;
-    long len;
+    long len, i;
     int b_signed;
 
     rb_scan_args(argc, argv, "11", &n, &f_signed);
@@ -496,7 +497,7 @@ rb_byte_buffer_read_byte_array(int argc, VALUE *argv, VALUE self)
     ENSURE_READ_CAPACITY(b, len);
 
     ary = rb_ary_new();
-    for (int i=0; i<len; ++i) {
+    for (i=0; i<len; ++i) {
         uint8_t i8 = *((uint8_t*)READ_PTR(b));
         b->read_pos += 1;
 
@@ -551,11 +552,11 @@ rb_byte_buffer_update(VALUE self, VALUE location, VALUE bytes)
     if (offset < 0) rb_raise(rb_eRangeError, "location can't be negative");
 
     TypedData_Get_Struct(self, buffer_t, &buffer_data_type, b);
-    if (offset >= READ_SIZE(b))
+    if ((size_t)offset >= READ_SIZE(b))
         return self;
 
     copy_bytes_len = RSTRING_LEN(bytes);
-    if (offset + copy_bytes_len > READ_SIZE(b))
+    if ((size_t)(offset + copy_bytes_len) > READ_SIZE(b))
         copy_bytes_len = READ_SIZE(b) - offset;
     memcpy(READ_PTR(b) + offset, RSTRING_PTR(bytes), copy_bytes_len);
 
@@ -591,7 +592,7 @@ value_to_int32(VALUE x)
         int64_t i64 = FIX2LONG(x);
 
         if (i64 > 0xFFFFFFFF || -i64 > 0x80000000)
-            rb_raise(rb_eRangeError, "Number %lld is too big", i64);
+            rb_raise(rb_eRangeError, "Number %" PRId64 " is too big", i64);
 
         return (int32_t)i64;
     } else if (TYPE(x) == T_BIGNUM)
