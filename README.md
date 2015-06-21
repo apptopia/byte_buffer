@@ -1,8 +1,10 @@
 # ByteBuffer
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/byte_buffer`. To experiment with that code, run `bin/console` for an interactive prompt.
+Fast native implementation of binary buffer for MRI.
 
-TODO: Delete this and the text above, and describe your gem
+ByteBuffer is designed to be a drop in replacement of https://github.com/iconara/ione `Ione::ByteBuffer`. It implements the same interface, extending it with support for additional numeric types and array operations.
+
+It can be used for marshalling/demarshalling of binary frame PDUs. A prime example of such use case is code for handling cassandra native protocol which can be found in `Cassandra::Protocol::CqlNativeByteBuffe` from https://github.com/apptopia/ruby-driver/tree/perf-tweaks
 
 ## Installation
 
