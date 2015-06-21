@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version       = ByteBuffer::VERSION
   spec.authors       = ["Serge Balyuk"]
   spec.email         = ["sergeb@apptopia.com", "bgipsy@gmail.com"]
-  spec.homepage      = "http:://github.com/apptopia/byte_buffer"
+  spec.homepage      = "http://github.com/apptopia/byte_buffer"
   spec.license       = "MIT"
 
   spec.summary       = %q{
