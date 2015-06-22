@@ -2,9 +2,9 @@
 
 Fast native implementation of binary buffer for MRI.
 
-ByteBuffer is designed to be a drop in replacement of https://github.com/iconara/ione `Ione::ByteBuffer`. It implements the same interface, extending it with support for additional numeric types and array operations.
+ByteBuffer is designed to be a drop in replacement of `Ione::ByteBuffer` from [ione gem](https://github.com/iconara/ione). It implements the same interface, extending it with support for additional numeric types and array operations.
 
-It can be used for marshalling/demarshalling of binary frame PDUs. A prime example of such use case is code for handling cassandra native protocol which can be found in `Cassandra::Protocol::CqlNativeByteBuffer` from https://github.com/apptopia/ruby-driver/tree/perf-tweaks
+It can be used for marshalling/demarshalling of binary frame PDUs. A prime example of such use case is code for handling cassandra native protocol which can be found in `Cassandra::Protocol::CqlNativeByteBuffer` class within [custom branch](https://github.com/apptopia/ruby-driver/tree/perf-tweaks) of cassandra driver gem.
 
 ## Benchmarks
 
