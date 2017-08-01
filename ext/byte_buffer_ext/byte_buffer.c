@@ -667,5 +667,12 @@ byte_buffer_free(void *ptr)
 size_t
 byte_buffer_memsize(const void *ptr)
 {
-    return ptr ? sizeof(buffer_t) : 0;
+    const buffer_t *b = ptr;
+
+    if (!b) return 0;
+
+    if (b->b_ptr != b->embedded_buffer)
+        return sizeof(buffer_t) + b->size;
+    else
+        return sizeof(buffer_t);
 }
